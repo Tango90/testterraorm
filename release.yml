@@ -1,0 +1,38 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main # Change this to your main branch
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14' # Change to the appropriate version
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build # Replace with your build command if needed
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          files: dist/* # Replace with the path to your release files
+          tag_name: v1.0.0 # Replace with the desired tag/release version
+          release_name: Release v1.0.0 # Replace with the release name
+          draft: false
+          prerelease: false
+
+      - name: Get the release ID
+        run: echo "Release ID is ${{ steps.create_release.outputs.id }}"
