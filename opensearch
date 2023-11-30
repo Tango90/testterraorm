@@ -1,0 +1,24 @@
+provider "opensearch" {
+  endpoint   = "https://your-opensearch-cluster-endpoint"
+  aws_profile = "your-aws-profile"
+  # Add other necessary provider configurations
+}
+
+resource "opensearch_role_mapping" "manage_cluster_role_mapping" {
+  name             = "manage-cluster-role-mapping"
+  opensearch_type  = "_doc"
+  opensearch_index = ".opendistro_security"
+
+  role_arns = [
+    "arn:aws:iam::ACCOUNT_ID:role/your-aws-role",
+    # Add additional role ARNs as needed
+  ]
+
+  # Specify the backend roles that should be mapped to the IAM roles
+  backend_roles = [
+    "manage_cluster",
+    # Add additional backend roles as needed
+  ]
+
+  resolve_nested_roles = true  # Optional: If your roles are nested, set this to true
+}
