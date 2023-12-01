@@ -1,0 +1,84 @@
+provider "aws" {
+  region = "your_region"
+}
+
+resource "aws_opensearch_domain" "example" {
+  domain_name           = "your-opensearch-domain"
+  cluster_config {
+    instance_type = "t2.small.search"
+  }
+}
+
+resource "aws_iam_role" "opensearch_role" {
+  name = "opensearch_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = {
+          Service = "es.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "opensearch_policy" {
+  name        = "opensearch_policy"
+  description = "Policy for OpenSearch"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = ["es:*"],
+        Resource = aws_opensearch_domain.example.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "opensearch_attach" {
+  policy_arn = aws_iam_policy.opensearch_policy.arn
+  role       = aws_iam_role.opensearch_role.name
+}
+
+resource "aws_opensearch_domain_access_policies" "opensearch_access_policies" {
+  domain_name = aws_opensearch_domain.example.domain_name
+
+  access_policies = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "es.amazonaws.com"
+      },
+      "Action": "es:ESHttp*",
+      "Resource": "arn:aws:es:your_region:your_account_id:domain/your-opensearch-domain/*",
+      "Condition": {
+        "IpAddress": {
+          "aws:SourceIp": "your_ip_address"
+        }
+      }
+    }
+  ]
+}
+POLICY
+}
+
+resource "aws_opensearch_domain_identity_provider" "opensearch_idp" {
+  domain_name = aws_opensearch_domain.example.domain_name
+  enabled     = true
+  type        = "Cognito"
+  cognito_options {
+    identity_pool_id = "your_cognito_identity_pool_id"
+    role_arn         = aws_iam_role.opensearch_role.arn
+    user_pool_id     = "your_cognito_user_pool_id"
+  }
+}
